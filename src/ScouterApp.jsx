@@ -1,6 +1,5 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect, useId } from "react";
 import {
-  Activity,
   ArrowLeft,
   BadgeCheck,
   Check,
@@ -9,6 +8,7 @@ import {
   Film,
   Heart,
   Info,
+  Lock,
   MapPin,
   MessageCircle,
   Pause,
@@ -26,7 +26,7 @@ import {
 const SITE_URL = "https://scouter-site.vercel.app/";
 
 /* ------------------------------------------------------------------ */
-/* VERIFIED GEORGIAN FOOTBALL TALENT DATABASE                         */
+/* VERIFIED GEORGIAN TALENT DATABASE (Ages 14–25)                     */
 /* ------------------------------------------------------------------ */
 const ATHLETES_DB = [
   {
@@ -35,6 +35,7 @@ const ATHLETES_DB = [
     initials: "GK",
     age: 17,
     ageGroup: "U17",
+    isMinor: true,
     position: "Striker",
     region: "Samegrelo",
     city: "Zugdidi",
@@ -43,7 +44,7 @@ const ATHLETES_DB = [
     weight: "74 kg",
     foot: "Right",
     verified: true,
-    verifiedBy: "GFF Youth Registry & Coach D. Shengelia",
+    verifiedBy: "GFF Youth Registry & Combine Log",
     rating: 87,
     sprint30m: "3.98 s",
     passAccuracy: "81%",
@@ -54,7 +55,7 @@ const ATHLETES_DB = [
     gradient: "from-emerald-600 via-teal-700 to-slate-900",
     matchTitle: "Zugdidi U17 vs. Batumi Academy (Full 90' Uncut)",
     summary:
-      "Clinical central forward with explosive acceleration in behind and verified physical test logs. 14 goals in 18 regional academy fixtures.",
+      "Clinical central forward with explosive acceleration in behind and verified combine test logs. 14 goals in 18 regional academy fixtures.",
   },
   {
     id: 2,
@@ -62,6 +63,7 @@ const ATHLETES_DB = [
     initials: "LM",
     age: 16,
     ageGroup: "U17",
+    isMinor: true,
     position: "Left Back",
     region: "Imereti",
     city: "Kutaisi",
@@ -87,26 +89,27 @@ const ATHLETES_DB = [
     id: 3,
     name: "Dato Beridze",
     initials: "DB",
-    age: 16,
-    ageGroup: "U17",
+    age: 20,
+    ageGroup: "U23 / Senior",
+    isMinor: false,
     position: "Midfielder",
     region: "Tbilisi",
     city: "Tbilisi",
-    club: "Saburtalo Youth",
-    height: "176 cm",
-    weight: "68 kg",
+    club: "Saburtalo II",
+    height: "178 cm",
+    weight: "71 kg",
     foot: "Both",
     verified: true,
-    verifiedBy: "GFF Youth Registry & Academy Telemetry",
-    rating: 85,
-    sprint30m: "4.15 s",
+    verifiedBy: "Federation Liga 2/3 & GPS Telemetry",
+    rating: 86,
+    sprint30m: "4.11 s",
     passAccuracy: "91%",
-    topSpeed: "31.9 km/h",
-    fullMatches: 9,
+    topSpeed: "32.1 km/h",
+    fullMatches: 11,
     goalsAssists: "6G / 11A",
-    stats: { PAC: 82, SHO: 79, PAS: 91, DRI: 86, DEF: 78, PHY: 79 },
+    stats: { PAC: 83, SHO: 79, PAS: 91, DRI: 86, DEF: 79, PHY: 84 },
     gradient: "from-indigo-600 via-blue-800 to-slate-900",
-    matchTitle: "Tbilisi U17 Cup Semi-Final (Full 90' Uncut)",
+    matchTitle: "Liga 2 Central Fixture (Full 90' Uncut)",
     summary:
       "Press-resistant central midfielder dictating tempo with 91% pass accuracy and verified 11.8 km average match distance.",
   },
@@ -116,6 +119,7 @@ const ATHLETES_DB = [
     initials: "ST",
     age: 18,
     ageGroup: "U19",
+    isMinor: false,
     position: "Goalkeeper",
     region: "Imereti",
     city: "Zestaponi",
@@ -124,7 +128,7 @@ const ATHLETES_DB = [
     weight: "83 kg",
     foot: "Right",
     verified: true,
-    verifiedBy: "Regional Federation & GK Coach Log",
+    verifiedBy: "Regional Federation & Combine Reflex Log",
     rating: 83,
     sprint30m: "4.35 s",
     passAccuracy: "84%",
@@ -141,28 +145,29 @@ const ATHLETES_DB = [
     id: 5,
     name: "Tornike Gelashvili",
     initials: "TG",
-    age: 17,
-    ageGroup: "U17",
+    age: 22,
+    ageGroup: "U23 / Senior",
+    isMinor: false,
     position: "Left Back",
     region: "Tbilisi",
     city: "Tbilisi",
     club: "Independent / Regional",
-    height: "180 cm",
-    weight: "72 kg",
+    height: "181 cm",
+    weight: "73 kg",
     foot: "Left",
     verified: false,
-    verifiedBy: "Pending Local Coach Confirmation",
+    verifiedBy: "Pending Federation / Coach Verification",
     rating: 78,
-    sprint30m: "4.20 s",
+    sprint30m: "4.19 s",
     passAccuracy: "80%",
     topSpeed: "31.6 km/h",
     fullMatches: 2,
     goalsAssists: "2G / 4A",
-    stats: { PAC: 83, SHO: 68, PAS: 80, DRI: 77, DEF: 76, PHY: 78 },
+    stats: { PAC: 84, SHO: 68, PAS: 80, DRI: 77, DEF: 76, PHY: 78 },
     gradient: "from-slate-700 via-slate-800 to-slate-900",
-    matchTitle: "Regional Friendly Match (Full 90' Upload)",
+    matchTitle: "Regional Cup Match (Full 90' Upload)",
     summary:
-      "Self-uploaded prospect awaiting coach verification sign-off. Full uncut match recording available for remote review.",
+      "Self-uploaded senior prospect awaiting coach verification sign-off. Full uncut match recording available for remote review.",
   },
 ];
 
@@ -172,7 +177,64 @@ const CLUB_VIEWS_LOG = [
   { club: "Dinamo Zagreb Academy", country: "Croatia · HNL Youth", time: "3d ago", action: "Checked 30m Sprint Log" },
 ];
 
+const QUICK_REPLIES = [
+  "Invite to 5-day trial",
+  "Request latest GPS log",
+  "Confirm passport & availability",
+];
+
 const SWIPE_THRESHOLD = 85;
+
+/* ------------------------------------------------------------------ */
+/* REFINED BRAND LOGO (Split Blue/Emerald S + Italic Scouter.)        */
+/* ------------------------------------------------------------------ */
+function AppLogo() {
+  const uid = useId().replace(/:/g, "");
+  const topGradId = `app-top-${uid}`;
+  const botGradId = `app-bot-${uid}`;
+
+  return (
+    <div className="flex items-center space-x-2.5 select-none">
+      <svg
+        width="34"
+        height="30"
+        viewBox="0 0 110 96"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="flex-shrink-0"
+      >
+        <defs>
+          <linearGradient id={topGradId} x1="14" y1="46" x2="96" y2="10" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#2563EB" />
+            <stop offset="100%" stopColor="#06B6D4" />
+          </linearGradient>
+          <linearGradient id={botGradId} x1="12" y1="86" x2="96" y2="44" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#10B981" />
+            <stop offset="100%" stopColor="#34D399" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M44 10H98L83 25H47C43.5 25 40.5 26.8 38.8 29.8L30 45H12L25.5 21.5C29.3 14.8 36.3 10 44 10Z"
+          fill={`url(#${topGradId})`}
+        />
+        <path
+          d="M52 38H84L96 51L66 86H12L27 71H59C62.5 71 65.5 69.2 67.2 66.2L74 54H43L52 38Z"
+          fill={`url(#${botGradId})`}
+        />
+      </svg>
+
+      <div>
+        <span className="text-lg font-black italic tracking-tight text-white leading-none block">
+          Scouter
+          <span className="inline-block w-1.5 h-1.5 bg-emerald-500 ml-0.5 align-baseline" />
+        </span>
+        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 block mt-0.5">
+          Talent Intelligence
+        </span>
+      </div>
+    </div>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /* MAIN MOBILE-FIRST APPLICATION                                      */
@@ -184,7 +246,7 @@ export default function App() {
   const [posFilter, setPosFilter] = useState("All");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [deckIndex, setDeckIndex] = useState(0);
-  const [history, setHistory] = useState([]); // [{ index, action }] for Rewind
+  const [history, setHistory] = useState([]);
   const [shortlistIds, setShortlistIds] = useState([1]);
   const [dossierAthlete, setDossierAthlete] = useState(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
@@ -208,12 +270,14 @@ export default function App() {
         {
           id: 1,
           sender: "scout",
+          time: "14:12",
           text: "Hello Coach Shengelia & Giorgi's guardian — we reviewed the Zugdidi U17 full 90' match tape.",
         },
         {
           id: 2,
           sender: "guardian",
-          text: "Thank you! Giorgi's official 30m sprint (3.98s) and medical logs are updated on his profile.",
+          time: "14:18",
+          text: "Thank you! Giorgi's official 30m sprint (3.98s) and combine logs are verified on his profile.",
         },
       ],
     },
@@ -236,11 +300,40 @@ export default function App() {
     PHY: 82,
   });
 
-  useEffect(() => () => clearTimeout(timerRef.current), []);
+  // Sync Browser Favicon with Split Blue/Emerald 'S' Brand Mark
+  useEffect(() => {
+    const svgFavicon = encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 96">
+        <rect width="110" height="96" rx="22" fill="#060B19"/>
+        <defs>
+          <linearGradient id="t" x1="14" y1="46" x2="96" y2="10" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#2563EB"/>
+            <stop offset="100%" stop-color="#06B6D4"/>
+          </linearGradient>
+          <linearGradient id="b" x1="12" y1="86" x2="96" y2="44" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#10B981"/>
+            <stop offset="100%" stop-color="#34D399"/>
+          </linearGradient>
+        </defs>
+        <path d="M44 12H96L82 26H47C43.5 26 40.5 27.8 38.8 30.8L30 45H14L26.5 23C30.2 16.5 36.8 12 44 12Z" fill="url(#t)"/>
+        <path d="M52 38H83L94 50L65 84H14L28 70H58C61.5 70 64.5 68.2 66.2 65.2L73 53H44L52 38Z" fill="url(#b)"/>
+      </svg>
+    `);
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    link.href = `data:image/svg+xml,${svgFavicon}`;
+    document.title = "Scouter. App — Scout Terminal & Card Studio";
+
+    return () => clearTimeout(timerRef.current);
+  }, []);
 
   const showToast = (msg) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 2400);
+    setTimeout(() => setToast(null), 2300);
   };
 
   const filteredDeck = useMemo(() => {
@@ -252,11 +345,17 @@ export default function App() {
   }, [posFilter, verifiedOnly]);
 
   const activeAthlete = filteredDeck[deckIndex] || null;
+  const nextAthlete = filteredDeck[deckIndex + 1] || null;
   const isFinished = filteredDeck.length > 0 && deckIndex >= filteredDeck.length;
 
   const shortlistedAthletes = useMemo(
     () => ATHLETES_DB.filter((a) => shortlistIds.includes(a.id)),
     [shortlistIds]
+  );
+
+  const unreadCount = useMemo(
+    () => Object.values(conversations).reduce((sum, c) => sum + (c.unread || 0), 0),
+    [conversations]
   );
 
   const overallRating = useMemo(() => {
@@ -279,7 +378,7 @@ export default function App() {
 
     if (direction === "right") {
       setShortlistIds((prev) => (prev.includes(activeAthlete.id) ? prev : [...prev, activeAthlete.id]));
-      showToast(`✓ ${activeAthlete.name.split(" ")[0]} added to Club Shortlist`);
+      showToast(`✓ ${activeAthlete.name.split(" ")[0]} saved to Shortlist`);
     }
 
     timerRef.current = setTimeout(() => {
@@ -287,7 +386,7 @@ export default function App() {
       setDeckIndex((prev) => prev + 1);
       setExitDir(null);
       setDragX(0);
-    }, 260);
+    }, 240);
   };
 
   const handleRewind = () => {
@@ -342,7 +441,8 @@ export default function App() {
               {
                 id: Date.now(),
                 sender: "scout",
-                text: `Trial Inquiry: We would like to invite ${athlete.name} (${athlete.club}) for an upcoming assessment.`,
+                time: "Just now",
+                text: `Trial Inquiry: We would like to invite ${athlete.name} (${athlete.club}) for an upcoming club evaluation.`,
               },
             ],
           },
@@ -351,70 +451,77 @@ export default function App() {
     setActiveTab("inbox");
   };
 
-  const handleSendChat = (e) => {
-    e.preventDefault();
-    if (!chatDraft.trim() || !activeChatId) return;
+  const sendChatMessage = (textToSend) => {
+    const clean = textToSend.trim();
+    if (!clean || !activeChatId) return;
     setConversations((prev) => ({
       ...prev,
       [activeChatId]: {
         unread: 0,
         messages: [
           ...(prev[activeChatId]?.messages || []),
-          { id: Date.now(), sender: "scout", text: chatDraft.trim() },
+          { id: Date.now(), sender: "scout", time: "Just now", text: clean },
         ],
       },
     }));
     setChatDraft("");
   };
 
+  const handleSendChat = (e) => {
+    e.preventDefault();
+    sendChatMessage(chatDraft);
+  };
+
   const likeOpacity = Math.min(Math.max(dragX / SWIPE_THRESHOLD, 0), 1);
   const passOpacity = Math.min(Math.max(-dragX / SWIPE_THRESHOLD, 0), 1);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col">
+    <div className="min-h-[100dvh] bg-slate-950 text-slate-200 flex flex-col selection:bg-emerald-500 selection:text-slate-950">
       {/* ============================================================== */}
-      {/* TOP APP BAR (Sticky, Clean, Full-Bleed Mobile-First)           */}
+      {/* NATIVE-STYLE TOP APP BAR                                       */}
       {/* ============================================================== */}
-      <header className="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-xl border-b border-white/10">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center rotate-12 shadow-md shadow-emerald-500/20">
-              <Activity size={18} className="text-slate-950 -rotate-12" />
-            </div>
-            <div>
-              <span className="text-lg font-black tracking-tight text-white leading-none block">
-                Scouter<span className="text-emerald-500">.</span>
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                {activeTab === "studio" ? "Athlete Card Studio" : "Scout Terminal"}
-              </span>
-            </div>
-          </div>
+      <header className="sticky top-0 z-30 bg-slate-950/85 backdrop-blur-2xl border-b border-white/10">
+        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+          <AppLogo />
 
-          <a
-            href={SITE_URL}
-            className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-900 border border-white/10 text-xs font-bold text-slate-300 hover:text-white transition-colors"
-          >
-            <ArrowLeft size={13} className="mr-1" /> Site
-          </a>
+          <div className="flex items-center space-x-2">
+            {/* Quick Role Pill Switcher */}
+            <button
+              onClick={() => setActiveTab(activeTab === "studio" ? "discover" : "studio")}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-black border transition-all active:scale-95 ${
+                activeTab === "studio"
+                  ? "bg-amber-400/15 text-amber-300 border-amber-400/30"
+                  : "bg-blue-500/15 text-blue-300 border-blue-500/30"
+              }`}
+            >
+              {activeTab === "studio" ? "Athlete Mode" : "Scout Mode"}
+            </button>
+
+            <a
+              href={SITE_URL}
+              className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-900 border border-white/10 text-[11px] font-bold text-slate-300 hover:text-white active:scale-95 transition-all"
+            >
+              <ArrowLeft size={12} className="mr-1" /> Info
+            </a>
+          </div>
         </div>
       </header>
 
-      {/* Toast Notification Banner */}
+      {/* Native Floating Toast Banner */}
       {toast && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-emerald-500 text-slate-950 font-black text-xs shadow-xl whitespace-nowrap">
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-emerald-500 text-slate-950 font-black text-xs shadow-2xl shadow-emerald-500/30 whitespace-nowrap animate-bounce">
           {toast}
         </div>
       )}
 
       {/* ============================================================== */}
-      {/* MAIN SCROLLABLE CONTENT (pb-24 so Bottom Bar never overlaps)   */}
+      {/* MAIN APP VIEWPORT (Centered Mobile Frame on Desktop)           */}
       {/* ============================================================== */}
-      <main className="flex-1 w-full max-w-lg mx-auto px-4 pt-4 pb-28">
-        {/* -------------------- TAB 1: DISCOVER (SWIPE) -------------------- */}
+      <main className="flex-1 w-full max-w-md mx-auto px-4 pt-3.5 pb-28">
+        {/* -------------------- TAB 1: DISCOVER (SWIPE STACK) -------------------- */}
         {activeTab === "discover" && (
-          <div className="space-y-4">
-            {/* Horizontal Scrollable Position & Verification Pills */}
+          <div className="space-y-3.5">
+            {/* Horizontal Filter Chips */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
               <button
                 onClick={() => {
@@ -422,13 +529,13 @@ export default function App() {
                   setDeckIndex(0);
                   setHistory([]);
                 }}
-                className={`px-3 py-1.5 rounded-full text-xs font-black border whitespace-nowrap flex items-center transition-all ${
+                className={`px-3 py-1.5 rounded-full text-xs font-black border whitespace-nowrap flex items-center transition-all active:scale-95 ${
                   verifiedOnly
-                    ? "bg-emerald-500 text-slate-950 border-emerald-500"
+                    ? "bg-emerald-500 text-slate-950 border-emerald-500 shadow-sm shadow-emerald-500/30"
                     : "bg-slate-900 text-slate-300 border-white/10"
                 }`}
               >
-                <BadgeCheck size={13} className="mr-1" /> Verified Only
+                <BadgeCheck size={13} className="mr-1" /> Verified
               </button>
 
               {["All", "Striker", "Left Back", "Midfielder", "Goalkeeper"].map((pos) => (
@@ -439,9 +546,9 @@ export default function App() {
                     setDeckIndex(0);
                     setHistory([]);
                   }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap transition-all ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap transition-all active:scale-95 ${
                     posFilter === pos
-                      ? "bg-blue-600 text-white border-blue-500"
+                      ? "bg-blue-600 text-white border-blue-500 shadow-sm"
                       : "bg-slate-900 text-slate-400 border-white/10"
                   }`}
                 >
@@ -450,9 +557,9 @@ export default function App() {
               ))}
             </div>
 
-            {/* Swipe Card or Empty/Finished State */}
+            {/* Deck State: Empty / Finished / 2-Layer Card Stack */}
             {filteredDeck.length === 0 ? (
-              <div className="bg-slate-900 border border-white/10 rounded-3xl p-10 text-center space-y-3 mt-6">
+              <div className="bg-slate-900 border border-white/10 rounded-[28px] p-10 text-center space-y-3 mt-6">
                 <p className="text-base font-bold text-white">No prospects match this filter</p>
                 <button
                   onClick={() => {
@@ -460,178 +567,195 @@ export default function App() {
                     setVerifiedOnly(false);
                     setDeckIndex(0);
                   }}
-                  className="px-5 py-2.5 rounded-full bg-emerald-500 text-slate-950 font-black text-xs"
+                  className="px-5 py-2.5 rounded-full bg-emerald-500 text-slate-950 font-black text-xs active:scale-95"
                 >
                   Reset Filters
                 </button>
               </div>
             ) : isFinished ? (
-              <div className="bg-slate-900 border border-white/10 rounded-3xl p-8 text-center space-y-4 mt-4">
+              <div className="bg-slate-900 border border-white/10 rounded-[28px] p-8 text-center space-y-4 mt-4 shadow-xl">
                 <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center mx-auto">
                   <Check size={32} strokeWidth={3} />
                 </div>
-                <h3 className="text-xl font-black text-white">Queue Reviewed!</h3>
+                <h3 className="text-xl font-black text-white">All Prospects Reviewed</h3>
                 <p className="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto">
-                  You reviewed all {filteredDeck.length} verified prospects in this filter ({shortlistIds.length} in your club shortlist).
+                  You triaged all {filteredDeck.length} verified profiles ({shortlistIds.length} saved to your club shortlist).
                 </p>
                 <div className="pt-2 flex flex-col gap-2.5">
                   <button
                     onClick={() => setActiveTab("shortlist")}
-                    className="w-full py-3.5 rounded-full bg-emerald-500 text-slate-950 font-black text-xs"
+                    className="w-full py-3.5 rounded-full bg-emerald-500 text-slate-950 font-black text-xs active:scale-95"
                   >
-                    Open Shortlist ({shortlistIds.length})
+                    Open Club Shortlist ({shortlistIds.length})
                   </button>
                   <button
                     onClick={() => {
                       setDeckIndex(0);
                       setHistory([]);
                     }}
-                    className="w-full py-3 rounded-full bg-slate-800 text-white font-bold text-xs"
+                    className="w-full py-3 rounded-full bg-slate-800 text-white font-bold text-xs active:scale-95"
                   >
-                    Review Prospects Again
+                    Reset Queue
                   </button>
                 </div>
               </div>
             ) : (
               <>
-                {/* Swipeable Telemetry Scouting Card */}
-                <div
-                  key={activeAthlete.id}
-                  onPointerDown={onPointerDown}
-                  onPointerMove={onPointerMove}
-                  onPointerUp={onPointerUp}
-                  onPointerCancel={onPointerUp}
-                  style={{
-                    transform: exitDir
-                      ? `translateX(${exitDir === "right" ? 130 : -130}%) rotate(${exitDir === "right" ? 14 : -14}deg)`
-                      : `translateX(${dragX}px) rotate(${dragX / 22}deg)`,
-                    opacity: exitDir ? 0 : 1,
-                    transition: dragging ? "none" : "transform 260ms ease, opacity 260ms ease",
-                    touchAction: "pan-y",
-                  }}
-                  className="select-none cursor-grab active:cursor-grabbing bg-slate-900 border border-white/15 rounded-3xl overflow-hidden shadow-2xl relative"
-                >
-                  {/* Swipe Feedback Stamps */}
+                {/* 2-Layer Card Stack Container */}
+                <div className="relative pt-1">
+                  {/* Background Next-Card Peek for Native Depth */}
+                  {nextAthlete && (
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-x-3 top-3 bottom-0 rounded-[28px] bg-slate-900/70 border border-white/10 scale-[0.96] translate-y-2 opacity-65"
+                    />
+                  )}
+
+                  {/* Top Active Swipeable Card */}
                   <div
-                    style={{ opacity: likeOpacity }}
-                    className="pointer-events-none absolute top-14 left-5 z-20 px-3.5 py-1 border-4 border-emerald-400 text-emerald-400 font-black text-xl rounded-xl -rotate-12 tracking-widest bg-slate-950/70"
+                    key={activeAthlete.id}
+                    onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove}
+                    onPointerUp={onPointerUp}
+                    onPointerCancel={onPointerUp}
+                    style={{
+                      transform: exitDir
+                        ? `translateX(${exitDir === "right" ? 130 : -130}%) rotate(${exitDir === "right" ? 14 : -14}deg)`
+                        : `translateX(${dragX}px) rotate(${dragX / 22}deg)`,
+                      opacity: exitDir ? 0 : 1,
+                      transition: dragging ? "none" : "transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms ease",
+                      touchAction: "pan-y",
+                    }}
+                    className="select-none cursor-grab active:cursor-grabbing bg-slate-900 border border-white/15 rounded-[28px] overflow-hidden shadow-2xl relative"
                   >
-                    SHORTLIST
-                  </div>
-                  <div
-                    style={{ opacity: passOpacity }}
-                    className="pointer-events-none absolute top-14 right-5 z-20 px-3.5 py-1 border-4 border-rose-400 text-rose-400 font-black text-xl rounded-xl rotate-12 tracking-widest bg-slate-950/70"
-                  >
-                    PASS
-                  </div>
-
-                  {/* Card Top Visual Header */}
-                  <div className={`bg-gradient-to-br ${activeAthlete.gradient} p-5 relative`}>
-                    <div className="flex justify-between items-start">
-                      <div className="bg-slate-950/75 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/15">
-                        <span className="text-2xl font-black text-white leading-none">{activeAthlete.rating}</span>
-                        <span className="block text-[10px] font-black text-emerald-400 uppercase mt-0.5">
-                          {activeAthlete.position}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        {activeAthlete.verified ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-950/80 text-emerald-400 border border-emerald-500/30">
-                            <BadgeCheck size={13} className="mr-1" /> Verified
-                          </span>
-                        ) : (
-                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-950/60 text-slate-300">
-                            Pending
-                          </span>
-                        )}
-                        <button
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={() => {
-                            setVideoPlaying(false);
-                            setDossierAthlete(activeAthlete);
-                          }}
-                          className="w-8 h-8 rounded-full bg-slate-950/70 text-white flex items-center justify-center border border-white/15"
-                          aria-label="Open Dossier"
-                        >
-                          <Info size={16} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h2 className="text-2xl font-black text-white tracking-tight">
-                            {activeAthlete.name}, {activeAthlete.age}
-                          </h2>
-                          <p className="text-xs text-white/90 font-medium flex items-center mt-1">
-                            <MapPin size={12} className="mr-1" /> {activeAthlete.club} · {activeAthlete.city}
-                          </p>
-                        </div>
-                        <span className="text-[11px] font-mono font-bold bg-slate-950/60 px-2.5 py-1 rounded-lg text-white">
-                          {deckIndex + 1}/{filteredDeck.length}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card Telemetry & Match Log Body */}
-                  <div className="p-5 space-y-4">
-                    {/* 3 Core Hard Metrics */}
-                    <div className="grid grid-cols-3 gap-2 text-center bg-slate-950 rounded-2xl p-3 border border-white/5">
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase">30m Sprint</p>
-                        <p className="text-sm font-black text-white mt-0.5">{activeAthlete.sprint30m}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase">Pass %</p>
-                        <p className="text-sm font-black text-white mt-0.5">{activeAthlete.passAccuracy}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase">Full Tape</p>
-                        <p className="text-sm font-black text-emerald-400 mt-0.5">{activeAthlete.fullMatches} x 90'</p>
-                      </div>
-                    </div>
-
-                    {/* Top 3 Scouting Bars */}
-                    <div className="space-y-2">
-                      {Object.entries(activeAthlete.stats)
-                        .slice(0, 3)
-                        .map(([k, v]) => (
-                          <div key={k}>
-                            <div className="flex justify-between text-[11px] font-bold mb-1">
-                              <span className="text-slate-400">{k}</span>
-                              <span className="text-white">{v} / 99</span>
-                            </div>
-                            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full"
-                                style={{ width: `${v}%` }}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-
-                    <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{activeAthlete.summary}</p>
-
-                    <button
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={() => {
-                        setVideoPlaying(false);
-                        setDossierAthlete(activeAthlete);
-                      }}
-                      className="w-full py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 border border-white/10 text-xs font-bold text-blue-300 flex items-center justify-center"
+                    {/* Swipe Stamps */}
+                    <div
+                      style={{ opacity: likeOpacity }}
+                      className="pointer-events-none absolute top-14 left-5 z-20 px-3.5 py-1 border-4 border-emerald-400 text-emerald-400 font-black text-xl rounded-xl -rotate-12 tracking-widest bg-slate-950/75"
                     >
-                      <Film size={14} className="mr-1.5" /> Open Full 90' Match & Dossier{" "}
-                      <ChevronUp size={14} className="ml-1" />
-                    </button>
+                      SHORTLIST
+                    </div>
+                    <div
+                      style={{ opacity: passOpacity }}
+                      className="pointer-events-none absolute top-14 right-5 z-20 px-3.5 py-1 border-4 border-rose-400 text-rose-400 font-black text-xl rounded-xl rotate-12 tracking-widest bg-slate-950/75"
+                    >
+                      PASS
+                    </div>
+
+                    {/* Card Visual Header */}
+                    <div className={`bg-gradient-to-br ${activeAthlete.gradient} p-5 relative`}>
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="bg-slate-950/75 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/15">
+                          <span className="text-2xl font-black text-white leading-none">{activeAthlete.rating}</span>
+                          <span className="block text-[10px] font-black text-emerald-400 uppercase mt-0.5">
+                            {activeAthlete.position}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-1.5">
+                          <div className="flex items-center space-x-1.5">
+                            {activeAthlete.verified ? (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-950/80 text-emerald-400 border border-emerald-500/30">
+                                <BadgeCheck size={13} className="mr-1" /> Verified
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-950/60 text-slate-300">
+                                Pending
+                              </span>
+                            )}
+                            <button
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onClick={() => {
+                                setVideoPlaying(false);
+                                setDossierAthlete(activeAthlete);
+                              }}
+                              className="w-8 h-8 rounded-full bg-slate-950/70 text-white flex items-center justify-center border border-white/15 active:scale-90"
+                              aria-label="Open Dossier"
+                            >
+                              <Info size={16} />
+                            </button>
+                          </div>
+
+                          {activeAthlete.isMinor && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-950/70 text-amber-300 border border-amber-400/30">
+                              <Lock size={10} className="mr-1" /> U18 Guardian Protected
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-5">
+                        <div className="flex items-end justify-between">
+                          <div>
+                            <h2 className="text-2xl font-black text-white tracking-tight leading-tight">
+                              {activeAthlete.name}, {activeAthlete.age}
+                            </h2>
+                            <p className="text-xs text-white/90 font-medium flex items-center mt-1">
+                              <MapPin size={12} className="mr-1" /> {activeAthlete.club} · {activeAthlete.city}
+                            </p>
+                          </div>
+                          <span className="text-[11px] font-mono font-bold bg-slate-950/60 px-2.5 py-1 rounded-lg text-white">
+                            {deckIndex + 1}/{filteredDeck.length}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card Telemetry Body */}
+                    <div className="p-4 space-y-3.5">
+                      <div className="grid grid-cols-3 gap-2 text-center bg-slate-950 rounded-2xl p-2.5 border border-white/5">
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-500 uppercase">30m Sprint</p>
+                          <p className="text-sm font-black text-white mt-0.5">{activeAthlete.sprint30m}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-500 uppercase">Pass %</p>
+                          <p className="text-sm font-black text-white mt-0.5">{activeAthlete.passAccuracy}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-500 uppercase">Full Tape</p>
+                          <p className="text-sm font-black text-emerald-400 mt-0.5">{activeAthlete.fullMatches} x 90'</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {Object.entries(activeAthlete.stats)
+                          .slice(0, 3)
+                          .map(([k, v]) => (
+                            <div key={k}>
+                              <div className="flex justify-between text-[11px] font-bold mb-1">
+                                <span className="text-slate-400">{k}</span>
+                                <span className="text-white">{v} / 99</span>
+                              </div>
+                              <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full"
+                                  style={{ width: `${v}%` }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+
+                      <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{activeAthlete.summary}</p>
+
+                      <button
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => {
+                          setVideoPlaying(false);
+                          setDossierAthlete(activeAthlete);
+                        }}
+                        className="w-full py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 border border-white/10 text-xs font-bold text-blue-300 flex items-center justify-center active:scale-98"
+                      >
+                        <Film size={14} className="mr-1.5" /> Open Full 90' Match & Dossier{" "}
+                        <ChevronUp size={14} className="ml-1" />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                {/* Tactile Swipe Controls (Rewind + Pass + Shortlist) */}
-                <div className="flex items-center justify-center gap-4 pt-2">
+                {/* Tactile Bottom Action Dock (Rewind + Pass + Shortlist) */}
+                <div className="flex items-center justify-center gap-5 pt-2">
                   <button
                     onClick={handleRewind}
                     disabled={history.length === 0}
@@ -639,7 +763,7 @@ export default function App() {
                     className={`w-12 h-12 rounded-full border flex items-center justify-center transition-all ${
                       history.length === 0
                         ? "bg-slate-900/50 border-white/5 text-slate-600 cursor-not-allowed"
-                        : "bg-slate-900 border-amber-500/40 text-amber-400 active:scale-90"
+                        : "bg-slate-900 border-amber-500/40 text-amber-400 active:scale-90 shadow-md"
                     }`}
                   >
                     <RotateCcw size={18} />
@@ -670,16 +794,21 @@ export default function App() {
         {activeTab === "shortlist" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-black text-white">Club Shortlist ({shortlistedAthletes.length})</h2>
-              <span className="text-xs font-bold text-emerald-400">Wisła Kraków Workspace</span>
+              <div>
+                <h2 className="text-xl font-black text-white">Club Shortlist ({shortlistedAthletes.length})</h2>
+                <p className="text-[11px] text-slate-400">Wisła Kraków · Scouting Workspace</p>
+              </div>
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                CLUB STARTER
+              </span>
             </div>
 
             {shortlistedAthletes.length === 0 ? (
-              <div className="bg-slate-900 border border-white/10 rounded-3xl p-8 text-center space-y-3">
+              <div className="bg-slate-900 border border-white/10 rounded-[28px] p-8 text-center space-y-3">
                 <p className="text-sm text-slate-400">Swipe right on prospects in Discover to save them here.</p>
                 <button
                   onClick={() => setActiveTab("discover")}
-                  className="px-5 py-2.5 rounded-full bg-emerald-500 text-slate-950 font-black text-xs"
+                  className="px-5 py-2.5 rounded-full bg-emerald-500 text-slate-950 font-black text-xs active:scale-95"
                 >
                   Back to Discover
                 </button>
@@ -689,12 +818,12 @@ export default function App() {
                 {shortlistedAthletes.map((a) => (
                   <div
                     key={a.id}
-                    className="bg-slate-900 border border-white/10 rounded-2xl p-4 space-y-3"
+                    className="bg-slate-900 border border-white/10 rounded-3xl p-4 space-y-3 shadow-md"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div
-                          className={`w-11 h-11 rounded-xl bg-gradient-to-br ${a.gradient} flex items-center justify-center font-black text-white text-sm`}
+                          className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${a.gradient} flex items-center justify-center font-black text-white text-sm`}
                         >
                           {a.rating}
                         </div>
@@ -711,14 +840,14 @@ export default function App() {
 
                       <button
                         onClick={() => setShortlistIds((prev) => prev.filter((id) => id !== a.id))}
-                        className="text-xs text-slate-500 hover:text-rose-400 p-1"
+                        className="text-xs text-slate-500 hover:text-rose-400 p-1.5"
                         aria-label="Remove"
                       >
                         <X size={16} />
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 text-center bg-slate-950 rounded-xl p-2 text-xs">
+                    <div className="grid grid-cols-3 gap-2 text-center bg-slate-950 rounded-2xl p-2.5 text-xs">
                       <div>
                         <span className="text-[10px] text-slate-500 block">30m Sprint</span>
                         <strong className="text-white">{a.sprint30m}</strong>
@@ -739,13 +868,13 @@ export default function App() {
                           setVideoPlaying(false);
                           setDossierAthlete(a);
                         }}
-                        className="flex-1 py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs"
+                        className="flex-1 py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs active:scale-95"
                       >
                         Dossier & Tape
                       </button>
                       <button
                         onClick={() => startTrialChat(a)}
-                        className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs"
+                        className="flex-1 py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs active:scale-95"
                       >
                         Invite to Trial
                       </button>
@@ -761,67 +890,91 @@ export default function App() {
         {activeTab === "inbox" && (
           <div className="space-y-4">
             {activeChatId ? (
-              <div className="bg-slate-900 border border-white/10 rounded-3xl overflow-hidden flex flex-col">
-                {/* Chat Header */}
-                <div className="p-4 border-b border-white/10 flex items-center justify-between bg-slate-950/60">
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => setActiveChatId(null)}
-                      className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white"
-                    >
-                      <ArrowLeft size={16} />
-                    </button>
-                    <div>
-                      <h3 className="text-sm font-bold text-white">
-                        {ATHLETES_DB.find((a) => a.id === activeChatId)?.name}
-                      </h3>
-                      <p className="text-[11px] text-emerald-400 flex items-center">
-                        <ShieldCheck size={12} className="mr-1" /> Guardian & Academy Copied
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Messages */}
-                <div className="p-4 space-y-3 min-h-[300px] max-h-[55vh] overflow-y-auto">
-                  {(conversations[activeChatId]?.messages || []).map((m) => (
-                    <div key={m.id} className={`flex ${m.sender === "scout" ? "justify-end" : "justify-start"}`}>
-                      <div
-                        className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed ${
-                          m.sender === "scout"
-                            ? "bg-blue-600 text-white rounded-br-sm"
-                            : "bg-slate-800 text-slate-200 rounded-bl-sm"
-                        }`}
-                      >
-                        {m.text}
+              (() => {
+                const chatPlayer = ATHLETES_DB.find((a) => a.id === activeChatId);
+                return (
+                  <div className="bg-slate-900 border border-white/10 rounded-[28px] overflow-hidden flex flex-col shadow-xl">
+                    {/* Native Chat Top Bar */}
+                    <div className="p-4 border-b border-white/10 flex items-center justify-between bg-slate-950/70">
+                      <div className="flex items-center space-x-3">
+                        <button
+                          onClick={() => setActiveChatId(null)}
+                          className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white active:scale-90"
+                        >
+                          <ArrowLeft size={16} />
+                        </button>
+                        <div>
+                          <h3 className="text-sm font-bold text-white flex items-center">
+                            {chatPlayer?.name}
+                            {chatPlayer?.verified && <BadgeCheck size={14} className="ml-1 text-emerald-400" />}
+                          </h3>
+                          <p className="text-[11px] text-emerald-400 flex items-center">
+                            <ShieldCheck size={12} className="mr-1" />
+                            {chatPlayer?.isMinor ? "Guardian & Academy Copied (U18)" : `${chatPlayer?.club} Verified`}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
 
-                {/* Input */}
-                <form onSubmit={handleSendChat} className="p-3 border-t border-white/10 flex gap-2 bg-slate-950">
-                  <input
-                    type="text"
-                    value={chatDraft}
-                    onChange={(e) => setChatDraft(e.target.value)}
-                    placeholder="Send official trial details..."
-                    className="flex-1 bg-slate-900 border border-white/10 rounded-full px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
-                  />
-                  <button
-                    type="submit"
-                    className="w-10 h-10 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center flex-shrink-0"
-                  >
-                    <Send size={15} />
-                  </button>
-                </form>
-              </div>
+                    {/* Messages Feed */}
+                    <div className="p-4 space-y-3 min-h-[280px] max-h-[50vh] overflow-y-auto">
+                      {(conversations[activeChatId]?.messages || []).map((m) => (
+                        <div key={m.id} className={`flex flex-col ${m.sender === "scout" ? "items-end" : "items-start"}`}>
+                          <div
+                            className={`max-w-[82%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed ${
+                              m.sender === "scout"
+                                ? "bg-blue-600 text-white rounded-br-sm"
+                                : "bg-slate-800 text-slate-200 rounded-bl-sm"
+                            }`}
+                          >
+                            {m.text}
+                          </div>
+                          <span className="text-[10px] text-slate-500 mt-1 px-1">{m.time}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* One-Tap Quick Reply Chips */}
+                    <div className="px-3 py-2 border-t border-white/5 flex gap-1.5 overflow-x-auto no-scrollbar bg-slate-950/40">
+                      {QUICK_REPLIES.map((qr) => (
+                        <button
+                          key={qr}
+                          type="button"
+                          onClick={() => sendChatMessage(qr)}
+                          className="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-300 whitespace-nowrap border border-white/5 active:scale-95"
+                        >
+                          + {qr}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Input */}
+                    <form onSubmit={handleSendChat} className="p-3 border-t border-white/10 flex gap-2 bg-slate-950">
+                      <input
+                        type="text"
+                        value={chatDraft}
+                        onChange={(e) => setChatDraft(e.target.value)}
+                        placeholder="Send compliant trial message..."
+                        className="flex-1 bg-slate-900 border border-white/10 rounded-full px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      />
+                      <button
+                        type="submit"
+                        className="w-10 h-10 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center flex-shrink-0 active:scale-90"
+                      >
+                        <Send size={15} />
+                      </button>
+                    </form>
+                  </div>
+                );
+              })()
             ) : (
               <>
-                <h2 className="text-xl font-black text-white">Trial Inbox</h2>
-                <p className="text-xs text-slate-400">
-                  Direct, U18-compliant messaging with verified academies and legal guardians.
-                </p>
+                <div>
+                  <h2 className="text-xl font-black text-white">Trial Inbox</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Safeguarding-compliant outreach with verified guardians & academies.
+                  </p>
+                </div>
 
                 <div className="space-y-2.5">
                   {ATHLETES_DB.filter((a) => conversations[a.id] || shortlistIds.includes(a.id)).map((a) => {
@@ -833,22 +986,27 @@ export default function App() {
                         onClick={() => {
                           setConversations((prev) => ({
                             ...prev,
-                            [a.id]: prev[a.id]
-                              ? { ...prev[a.id], unread: 0 }
-                              : { unread: 0, messages: [] },
+                            [a.id]: prev[a.id] ? { ...prev[a.id], unread: 0 } : { unread: 0, messages: [] },
                           }));
                           setActiveChatId(a.id);
                         }}
-                        className="w-full text-left bg-slate-900 border border-white/10 hover:border-blue-500/50 rounded-2xl p-4 flex items-center justify-between transition-all"
+                        className="w-full text-left bg-slate-900 border border-white/10 hover:border-blue-500/50 rounded-3xl p-4 flex items-center justify-between transition-all active:scale-98"
                       >
-                        <div className="min-w-0 pr-3">
-                          <div className="flex items-center space-x-1.5">
-                            <h3 className="text-sm font-bold text-white truncate">{a.name}</h3>
-                            {a.verified && <BadgeCheck size={13} className="text-emerald-400 flex-shrink-0" />}
+                        <div className="flex items-center space-x-3 min-w-0 pr-3">
+                          <div
+                            className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${a.gradient} flex items-center justify-center font-black text-xs text-white flex-shrink-0`}
+                          >
+                            {a.initials}
                           </div>
-                          <p className="text-xs text-slate-400 truncate mt-1">
-                            {lastMsg ? lastMsg.text : `Tap to initiate trial invite with ${a.club}`}
-                          </p>
+                          <div className="min-w-0">
+                            <div className="flex items-center space-x-1.5">
+                              <h3 className="text-sm font-bold text-white truncate">{a.name}</h3>
+                              {a.verified && <BadgeCheck size={13} className="text-emerald-400 flex-shrink-0" />}
+                            </div>
+                            <p className="text-xs text-slate-400 truncate mt-0.5">
+                              {lastMsg ? lastMsg.text : `Tap to initiate trial invite with ${a.club}`}
+                            </p>
+                          </div>
                         </div>
                         {convo?.unread > 0 && (
                           <span className="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 text-[11px] font-black flex items-center justify-center flex-shrink-0">
@@ -866,19 +1024,19 @@ export default function App() {
 
         {/* -------------------- TAB 4: ATHLETE CARD STUDIO -------------------- */}
         {activeTab === "studio" && (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400">
-                <Sparkles size={13} className="mr-1.5" /> Athlete Portal (B2C)
+                <Sparkles size={13} className="mr-1.5" /> Athlete Portal (Ages 14–25)
               </span>
-              <h2 className="text-2xl font-black text-white mt-2">Your Verified Player Card</h2>
+              <h2 className="text-2xl font-black text-white mt-2">Verified Player Card</h2>
               <p className="text-xs text-slate-400 mt-1">
-                Customize your stats and preview your shareable EA FC-style scouting card.
+                Customize your combine metrics and share your EA FC-style scouting card.
               </p>
             </div>
 
-            {/* Live EA FC Card Preview (Centered for Mobile) */}
-            <div className="flex justify-center py-2">
+            {/* Live EA FC Card Preview */}
+            <div className="flex justify-center py-1">
               <div className="relative w-72">
                 <div
                   className={`absolute -inset-3 rounded-3xl blur-2xl ${
@@ -888,7 +1046,7 @@ export default function App() {
                   }`}
                 />
                 <div
-                  className={`relative rounded-3xl p-6 border-2 shadow-2xl ${
+                  className={`relative rounded-[28px] p-6 border-2 shadow-2xl ${
                     cardTier === "pro"
                       ? "bg-gradient-to-b from-slate-900 via-slate-900 to-emerald-950 border-amber-400/80 text-white"
                       : "bg-slate-900 border-slate-700 text-slate-200"
@@ -904,7 +1062,7 @@ export default function App() {
                         {overallRating}
                       </span>
                       <span className="block text-xs font-black tracking-widest mt-1 text-emerald-400">
-                        {position} · U{Number(age) <= 15 ? "15" : Number(age) <= 17 ? "17" : "19"}
+                        {position} · {Number(age) <= 15 ? "U15" : Number(age) <= 17 ? "U17" : Number(age) <= 19 ? "U19" : "U23"}
                       </span>
                       <span className="inline-block mt-2 text-[10px] font-black px-2 py-0.5 rounded bg-red-600 text-white">
                         GEO · {city.toUpperCase()}
@@ -928,7 +1086,7 @@ export default function App() {
                       {verified && <BadgeCheck size={16} className="text-emerald-400 flex-shrink-0" />}
                     </div>
                     <p className="text-[10px] opacity-75 font-bold mt-0.5">
-                      {verified ? "FEDERATION VERIFIED · SCOUTER.GE" : "BASIC PROFILE · SCOUTER.GE"}
+                      {verified ? "COMBINE VERIFIED · SCOUTER.GE" : "FREE BASIC · SCOUTER.GE"}
                     </p>
                   </div>
 
@@ -950,7 +1108,7 @@ export default function App() {
                 showToast("✓ Shareable Card Link Copied!");
                 setTimeout(() => setCopied(false), 2000);
               }}
-              className="w-full py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center shadow-lg"
+              className="w-full py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center shadow-lg active:scale-95 transition-all"
             >
               {copied ? (
                 <>
@@ -958,13 +1116,13 @@ export default function App() {
                 </>
               ) : (
                 <>
-                  <Share2 size={15} className="mr-1.5" /> Share Card to Instagram / TikTok
+                  <Share2 size={15} className="mr-1.5" /> Share Verified Card Link
                 </>
               )}
             </button>
 
-            {/* Interactive Controls Card */}
-            <div className="bg-slate-900 border border-white/10 rounded-3xl p-5 space-y-4">
+            {/* Controls */}
+            <div className="bg-slate-900 border border-white/10 rounded-[28px] p-5 space-y-4">
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setCardTier("basic")}
@@ -974,7 +1132,7 @@ export default function App() {
                       : "bg-slate-950 text-slate-400 border-white/10"
                   }`}
                 >
-                  Basic Free
+                  Free Basic
                 </button>
                 <button
                   onClick={() => setCardTier("pro")}
@@ -984,7 +1142,7 @@ export default function App() {
                       : "bg-slate-950 text-slate-400 border border-white/10"
                   }`}
                 >
-                  ★ Pro Card
+                  ★ Verified Pro
                 </button>
                 <button
                   onClick={() => setVerified(!verified)}
@@ -994,7 +1152,7 @@ export default function App() {
                       : "bg-slate-950 text-slate-400 border-white/10"
                   }`}
                 >
-                  <BadgeCheck size={14} className="mr-1" /> {verified ? "Verified" : "Unverified"}
+                  <BadgeCheck size={14} className="mr-1" /> {verified ? "Verified" : "Pending"}
                 </button>
               </div>
 
@@ -1024,18 +1182,19 @@ export default function App() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">City</label>
+                    <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Age</label>
                     <input
-                      type="text"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
+                      type="number"
+                      min="14"
+                      max="25"
+                      value={age}
+                      onChange={(e) => setAge(e.target.value)}
                       className="w-full bg-slate-950 border border-white/10 rounded-xl px-2 py-2 text-xs font-bold text-white"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* 6 Attribute Sliders */}
               <div className="grid grid-cols-2 gap-x-5 gap-y-3 pt-2">
                 {Object.entries(attrs).map(([k, v]) => (
                   <div key={k}>
@@ -1056,10 +1215,10 @@ export default function App() {
               </div>
             </div>
 
-            {/* Scout Profile Views Log */}
-            <div className="bg-slate-900 border border-white/10 rounded-3xl p-5 space-y-3">
+            {/* Scout Views Analytics */}
+            <div className="bg-slate-900 border border-white/10 rounded-[28px] p-5 space-y-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center">
-                <Eye size={14} className="mr-1.5 text-blue-400" /> Recent European Club Views
+                <Eye size={14} className="mr-1.5 text-blue-400" /> European Club Scout Views
               </h3>
               {CLUB_VIEWS_LOG.map((log) => (
                 <div
@@ -1082,11 +1241,14 @@ export default function App() {
       </main>
 
       {/* ============================================================== */}
-      {/* FULL DOSSIER BOTTOM SHEET / MODAL (Tap Card to Expand)         */}
+      {/* FULL DOSSIER BOTTOM SHEET (Native Slide-Up Sheet)              */}
       {/* ============================================================== */}
       {dossierAthlete && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center">
-          <div className="bg-slate-900 border-t sm:border border-white/15 rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-5 space-y-5">
+          <div className="bg-slate-900 border-t sm:border border-white/15 rounded-t-[32px] sm:rounded-[32px] w-full max-w-md max-h-[90dvh] overflow-y-auto p-5 space-y-4 shadow-2xl">
+            {/* Native Sheet Drag Handle */}
+            <div className="w-10 h-1 rounded-full bg-slate-700 mx-auto sm:hidden" />
+
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center space-x-2">
@@ -1106,13 +1268,20 @@ export default function App() {
               </div>
               <button
                 onClick={() => setDossierAthlete(null)}
-                className="w-9 h-9 rounded-full bg-slate-800 text-white flex items-center justify-center"
+                className="w-9 h-9 rounded-full bg-slate-800 text-white flex items-center justify-center active:scale-90"
               >
                 <X size={18} />
               </button>
             </div>
 
-            {/* Simulated Uncut Match Player */}
+            {dossierAthlete.isMinor && (
+              <div className="rounded-2xl p-3 bg-amber-500/10 border border-amber-500/25 text-amber-200 text-[11px] flex items-start gap-2">
+                <Lock size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                <span>U18 Safeguarding Active: Messages route strictly through verified parents/guardians & academy staff.</span>
+              </div>
+            )}
+
+            {/* Simulated Uncut 90' Match Player */}
             <div
               onClick={() => setVideoPlaying(!videoPlaying)}
               className={`cursor-pointer rounded-2xl p-4 border transition-all ${
@@ -1120,10 +1289,10 @@ export default function App() {
               }`}
             >
               <div className="flex items-center justify-between text-xs mb-3">
-                <span className="font-bold text-blue-400 flex items-center">
-                  <Film size={14} className="mr-1.5" /> {dossierAthlete.matchTitle}
+                <span className="font-bold text-blue-400 flex items-center truncate pr-2">
+                  <Film size={14} className="mr-1.5 flex-shrink-0" /> {dossierAthlete.matchTitle}
                 </span>
-                <span className="text-emerald-400 font-black">HD 1080p</span>
+                <span className="text-emerald-400 font-black flex-shrink-0">HD 1080p</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-11 h-11 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center flex-shrink-0">
@@ -1134,13 +1303,13 @@ export default function App() {
                     <div className={`h-full bg-emerald-400 transition-all ${videoPlaying ? "w-2/3" : "w-1/4"}`} />
                   </div>
                   <p className="text-[11px] text-slate-400 mt-1.5">
-                    {videoPlaying ? "Playing uncut wide-angle match footage (21:14 / 90:00)" : "Tap to preview full match"}
+                    {videoPlaying ? "Playing uncut wide-angle match footage (21:14 / 90:00)" : "Tap to preview full 90' match"}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Full 6 Attributes */}
+            {/* Full 6 Combine Attributes */}
             <div className="grid grid-cols-3 gap-2 text-center bg-slate-950 p-3 rounded-2xl border border-white/5">
               {Object.entries(dossierAthlete.stats).map(([k, v]) => (
                 <div key={k} className="p-1.5">
@@ -1157,7 +1326,7 @@ export default function App() {
 
             <button
               onClick={() => startTrialChat(dossierAthlete)}
-              className="w-full py-3.5 rounded-full bg-emerald-500 text-slate-950 font-black text-sm"
+              className="w-full py-3.5 rounded-full bg-emerald-500 text-slate-950 font-black text-sm active:scale-95 transition-all"
             >
               Invite to Trial / Message Academy
             </button>
@@ -1166,29 +1335,33 @@ export default function App() {
       )}
 
       {/* ============================================================== */}
-      {/* FIXED BOTTOM NAVIGATION BAR (4 Mobile App Tabs)                */}
+      {/* FLOATING NATIVE BOTTOM DOCK (4 Mobile App Tabs)                */}
       {/* ============================================================== */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-xl border-t border-white/10">
-        <div className="max-w-lg mx-auto px-4 py-2.5 flex items-center justify-around">
+      <nav className="fixed bottom-3 left-3 right-3 z-40">
+        <div className="max-w-md mx-auto bg-slate-900/90 backdrop-blur-2xl border border-white/15 rounded-[26px] px-2 py-2 flex items-center justify-around shadow-2xl">
           <button
             onClick={() => setActiveTab("discover")}
-            className={`flex flex-col items-center py-1 px-3 rounded-xl transition-colors ${
-              activeTab === "discover" ? "text-emerald-400" : "text-slate-500 hover:text-slate-300"
+            className={`flex flex-col items-center py-1.5 px-3.5 rounded-2xl transition-all ${
+              activeTab === "discover"
+                ? "bg-emerald-500/15 text-emerald-400"
+                : "text-slate-500 hover:text-slate-300"
             }`}
           >
-            <Search size={20} />
+            <Search size={19} />
             <span className="text-[10px] font-black uppercase tracking-wider mt-1">Discover</span>
           </button>
 
           <button
             onClick={() => setActiveTab("shortlist")}
-            className={`flex flex-col items-center py-1 px-3 rounded-xl relative transition-colors ${
-              activeTab === "shortlist" ? "text-emerald-400" : "text-slate-500 hover:text-slate-300"
+            className={`flex flex-col items-center py-1.5 px-3.5 rounded-2xl relative transition-all ${
+              activeTab === "shortlist"
+                ? "bg-emerald-500/15 text-emerald-400"
+                : "text-slate-500 hover:text-slate-300"
             }`}
           >
-            <Heart size={20} />
+            <Heart size={19} />
             {shortlistIds.length > 0 && (
-              <span className="absolute top-0 right-2 w-4 h-4 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black flex items-center justify-center">
+              <span className="absolute top-1 right-2.5 w-4 h-4 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black flex items-center justify-center">
                 {shortlistIds.length}
               </span>
             )}
@@ -1197,21 +1370,30 @@ export default function App() {
 
           <button
             onClick={() => setActiveTab("inbox")}
-            className={`flex flex-col items-center py-1 px-3 rounded-xl transition-colors ${
-              activeTab === "inbox" ? "text-blue-400" : "text-slate-500 hover:text-slate-300"
+            className={`flex flex-col items-center py-1.5 px-3.5 rounded-2xl relative transition-all ${
+              activeTab === "inbox"
+                ? "bg-blue-500/15 text-blue-400"
+                : "text-slate-500 hover:text-slate-300"
             }`}
           >
-            <MessageCircle size={20} />
+            <MessageCircle size={19} />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-2.5 w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] font-black flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
             <span className="text-[10px] font-black uppercase tracking-wider mt-1">Inbox</span>
           </button>
 
           <button
             onClick={() => setActiveTab("studio")}
-            className={`flex flex-col items-center py-1 px-3 rounded-xl transition-colors ${
-              activeTab === "studio" ? "text-amber-400" : "text-slate-500 hover:text-slate-300"
+            className={`flex flex-col items-center py-1.5 px-3.5 rounded-2xl transition-all ${
+              activeTab === "studio"
+                ? "bg-amber-400/15 text-amber-300"
+                : "text-slate-500 hover:text-slate-300"
             }`}
           >
-            <Trophy size={20} />
+            <Trophy size={19} />
             <span className="text-[10px] font-black uppercase tracking-wider mt-1">Card Studio</span>
           </button>
         </div>
